@@ -16,6 +16,7 @@ from aiogram import F, Router
 from aiogram import filters, types
 from aiogram_media_group import media_group_handler
 from aiogram.exceptions import TelegramBadRequest
+from aiogram.filters import CommandStart, Command
 
 from tbank_kassa_api.tbank_client import TClient
 from tbank_kassa_api.tbank_models import *
@@ -540,7 +541,6 @@ async def search_inline(inline_query: types.InlineQuery, state: FSMContext):
         thumbnail_url = ""
         if point.icon:
             thumbnail_url = SITE_HOST.strip("/").replace(".", "-") + ".sslip.io" + "/media"+ f"/{point.icon}" 
-        print(thumbnail_url)
         if not thumbnail_url and DEBUG:
             thumbnail_url = "http://old-dos.ru/screens/3/9/f/a1f7cf628e9b1089e39590f32bef8.png"
         media.append(types.InlineQueryResultArticle(
@@ -842,13 +842,15 @@ async def order_data(input_message: types.CallbackQuery, state: FSMContext, call
                     Items = [item],
                     Taxation = Taxation.PATENT
                 )
+                exp = datetime.datetime.now() + datetime.timedelta(days=20)
                 model = Init(
                     OrderId = str(order.uuid),
                     Amount = amount_sell,
                     Description = service_text,
                     CustomerKey = str(user.pk),
                     NotificationURL = SITE_HOST + "/tbank_notify/",
-                    Receipt = receipt
+                    Receipt = receipt,
+                    RedirectDueDate=exp.isoformat(timespec='seconds')
                 )
                 response = await local_tbank_client.async_send_model(model)
                 payment_url = ""
@@ -1211,7 +1213,6 @@ async def hand_over(input_message: types.CallbackQuery, state: FSMContext,
             way_keyboard = await make_order_keyboard_build(order_uuid=order_uuid)
         
         elif hand_over_step == HandOverStep.hand_over.value:
-            loguru.logger.info('ДА')
             order_uuid = shortnuberic.decode(str(choise_data))
             order = await Orders.get_or_none(uuid=order_uuid)
             message_text = message_text

@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from bitrix24 import Bitrix24
 from tbank_kassa_api.tbank_client import TClient
@@ -263,13 +266,16 @@ class Orders(models.Model):
                     Items = [item],
                     Taxation = Taxation.PATENT
                 )
+
+                exp = timezone.now() + timedelta(days=20)
                 model = Init(
                     OrderId = str(self.uuid),
                     Amount = amount_sell,
                     Description = service_text,
                     CustomerKey = str(user.pk),
                     NotificationURL = settings.SITE_HOST + "/tbank_notify/",
-                    Receipt = receipt
+                    Receipt = receipt,
+                    RedirectDueDate = exp.isoformat(timespec='seconds')
                 )
                 response = local_tbank_client.sync_send_model(model)
                 payment_url = ""
